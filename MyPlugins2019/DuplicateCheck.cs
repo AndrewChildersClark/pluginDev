@@ -5,10 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xrm.Sdk;
 using System.ServiceModel;
+using Microsoft.Xrm.Sdk.Query;
 
 namespace MyPlugins2019
 {
-    public class TaskCreate : IPlugin
+    public class DuplicateCheck : IPlugin
     {
         public void Execute(IServiceProvider serviceProvider)
         {
@@ -41,25 +42,26 @@ namespace MyPlugins2019
                 try
                 {
                     // Plug-in business logic goes here.  
+                    string email = string.Empty;
+                    //only fields that have changes are passed to the attribute collection, aka contain data
+                    if (contact.Attributes.Contains("emailaddress1"))
+                    {
+                        email = contact.Attributes["emailaddress1"].ToString();
 
-                    Entity taskRecord = new Entity("task");
+                        // select * From contact where emailaddress1 == 'email'
+                        QueryExpression query = new QueryExpression("contact");
+                        query.ColumnSet = new ColumnSet(new string[] {"emailaddress1"});
+                        query.Criteria.AddCondition("emailaddress1", ConditionOperator.Equal, email);
 
-                    //Set Single line of text
-                    taskRecord.Attributes.Add("subject", "Follow up");
-                    taskRecord.Attributes.Add("description", "Please follow up with contact.");
+                        EntityCollection collection = service.RetrieveMultiple(query);
 
-                    //Set Date Attribute
-                    taskRecord.Attributes.Add("scheduledend",DateTime.Now.AddDays(2));
+                        if(collection.Entities.Count > 0)
+                        {
+                            throw new InvalidPluginExecutionException("A contact has already been created with this email");
+                        }
 
-                    //Set Option Set value as "High"
-                    taskRecord.Attributes.Add("prioritycode", new OptionSetValue(2));
+                    }
 
-                    // Set regarding aka Parent Record
-                    // taskRecord.Attributes.Add("regardingobjectid", new EntityReference("contact", contact.Id));
-
-                    taskRecord.Attributes.Add("regardingobjectid", contact.ToEntityReference());
-
-                    Guid taskGuid = service.Create(taskRecord);
                 }
 
                 catch (FaultException<OrganizationServiceFault> ex)

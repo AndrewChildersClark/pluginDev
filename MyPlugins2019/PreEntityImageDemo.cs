@@ -8,7 +8,7 @@ using System.ServiceModel;
 
 namespace MyPlugins2019
 {
-    public class TaskCreate : IPlugin
+   public class PreEntityImageDemo : IPlugin
     {
         public void Execute(IServiceProvider serviceProvider)
         {
@@ -35,31 +35,21 @@ namespace MyPlugins2019
                 context.InputParameters["Target"] is Entity)
             {
                 // Obtain the target entity from the input parameters.  
-                Entity contact = (Entity)context.InputParameters["Target"];
+                Entity entity = (Entity)context.InputParameters["Target"];
 
 
                 try
                 {
                     // Plug-in business logic goes here.  
+                    //Post Image
+                    string modifiedContactPhoneNumber = entity.Attributes["telephone1"].ToString();
 
-                    Entity taskRecord = new Entity("task");
+                    //Pre Image
+                    Entity preImage = (Entity)context.PreEntityImages["PreImage"];
+                    string oldContactPhoneNumber = preImage.Attributes["telephone1"].ToString();
 
-                    //Set Single line of text
-                    taskRecord.Attributes.Add("subject", "Follow up");
-                    taskRecord.Attributes.Add("description", "Please follow up with contact.");
+                    throw new InvalidPluginExecutionException("Phone number is changed from " + oldContactPhoneNumber + "to" + modifiedContactPhoneNumber);
 
-                    //Set Date Attribute
-                    taskRecord.Attributes.Add("scheduledend",DateTime.Now.AddDays(2));
-
-                    //Set Option Set value as "High"
-                    taskRecord.Attributes.Add("prioritycode", new OptionSetValue(2));
-
-                    // Set regarding aka Parent Record
-                    // taskRecord.Attributes.Add("regardingobjectid", new EntityReference("contact", contact.Id));
-
-                    taskRecord.Attributes.Add("regardingobjectid", contact.ToEntityReference());
-
-                    Guid taskGuid = service.Create(taskRecord);
                 }
 
                 catch (FaultException<OrganizationServiceFault> ex)
